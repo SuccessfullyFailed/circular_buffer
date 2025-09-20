@@ -48,18 +48,9 @@ mod tests {
 	fn test_take_more_than_available() {
 		let mut buffer:CircularBuffer<i32, TEST_CAPACITY> = get_test_buffer();
 
-		// Using "take".
 		buffer.extend(&[1, 2, 3]);
 		let taken_data:Vec<i32> = buffer.take(10);
 		assert_eq!(taken_data, vec![1, 2, 3]);
-		assert!(buffer.is_empty());
-
-		// Using "take_to_bufferfer".
-		buffer.extend(&[1, 2, 3]);
-		let mut taken_data:Vec<i32> = vec![0; 6];
-		let taken_amount:usize = buffer.take_to_buffer(&mut taken_data);
-		assert_eq!(taken_amount, 3);
-		assert_eq!(taken_data, vec![1, 2, 3, 0, 0, 0]);
 		assert!(buffer.is_empty());
 	}
 
@@ -104,6 +95,16 @@ mod tests {
 			assert_eq!(buffer.take(1), vec![i]);
 			assert!(buffer.is_empty());
 		}
+	}
+
+	#[test]
+	fn test_get_raw() {
+		let mut buffer:CircularBuffer<i32, TEST_CAPACITY> = get_test_buffer();
+		buffer.extend(&(0..7).collect::<Vec<i32>>());
+		buffer.take(3);
+		buffer.extend(&(7..12).collect::<Vec<i32>>());
+
+		assert_eq!(buffer.raw_data(), &[3, 4, 5, 6, 7, 8, 9, 2]);
 	}
 
 	#[test]

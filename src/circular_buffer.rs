@@ -53,7 +53,7 @@ impl<T:Default + Copy, const CAPACITY:usize> CircularBuffer<T, CAPACITY> {
 	}
 
 	/// Take an amount of samples from the buffer. Writes the data to the given output. Returns the amount of data taken from the buffer.
-	pub fn take_to_buffer(&mut self, output:&mut [T]) -> usize {
+	fn take_to_buffer(&mut self, output:&mut [T]) -> usize {
 
 		// Find out how much free space is left before wrap.
 		let used_space:usize = self.len();
@@ -76,6 +76,14 @@ impl<T:Default + Copy, const CAPACITY:usize> CircularBuffer<T, CAPACITY> {
 		// Return taken amount.
 		straight_space + wrapped_space
 	}
+
+	/// Get all data that is written in the buffer, ignoring the amount already having been read.
+	pub fn raw_data(&self) -> Vec<T> {
+		let mut output:Vec<T> = self.buffer.to_vec();
+		output.rotate_left(self.read_cursor);
+		output
+	}
+
 
 
 	
