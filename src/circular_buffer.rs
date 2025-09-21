@@ -1,3 +1,4 @@
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub struct CircularBuffer<T, const CAPACITY:usize> {
 	buffer:[T; CAPACITY],
 	read_cursor:usize,
