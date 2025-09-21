@@ -3,6 +3,17 @@ pub struct CircularBuffer<T, const CAPACITY:usize> {
 	read_cursor:usize,
 	write_cursor:usize
 }
+impl<T:Copy, const CAPACITY:usize> CircularBuffer<T, CAPACITY> {
+
+	/// Create a new circular buffer as compile-time constant.
+	pub const fn new_const(default_value:T) -> CircularBuffer<T, CAPACITY> {
+		CircularBuffer {
+			buffer: [default_value; CAPACITY],
+			read_cursor: 0,
+			write_cursor: 0
+		}
+	}
+}
 impl<T:Default + Copy, const CAPACITY:usize> CircularBuffer<T, CAPACITY> {
 	
 	/* CONSTRUCTOR METHODS */
