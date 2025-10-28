@@ -67,6 +67,11 @@ impl<T:Default + Copy, const CAPACITY:usize> CircularBuffer<T, CAPACITY> {
 		self.take(1)[0]
 	}
 
+	/// Take all samples from the buffer.
+	pub fn take_all(&mut self) -> Vec<T> {
+		self.take(self.len())
+	}
+
 	/// Take an amount of samples from the buffer.
 	pub fn take(&mut self, amount:usize) -> Vec<T> {
 		let mut output_buffer:Vec<T> = vec![T::default(); amount];
