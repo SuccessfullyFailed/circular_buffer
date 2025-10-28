@@ -32,6 +32,11 @@ impl<T:Default + Copy, const CAPACITY:usize> CircularBuffer<T, CAPACITY> {
 
 	/* BUFFER METHODS */
 
+	/// Add a single sample to the buffer. Returns the amount of samples stored to the buffer.
+	pub fn push(&mut self, input:T) -> usize {
+		self.extend(&[input])
+	}
+
 	/// Add a list of samples to the buffer. Returns the amount of samples stored to the buffer.
 	pub fn extend(&mut self, input:&[T]) -> usize {
 
@@ -55,6 +60,11 @@ impl<T:Default + Copy, const CAPACITY:usize> CircularBuffer<T, CAPACITY> {
 		self.buffer[self.write_cursor..self.write_cursor + required_space].copy_from_slice(&input);
 		self.write_cursor = (self.write_cursor + required_space) % CAPACITY;
 		required_space
+	}
+
+	/// Take one sample from the buffer.
+	pub fn take_one(&mut self) -> T {
+		self.take(1)[0]
 	}
 
 	/// Take an amount of samples from the buffer.
