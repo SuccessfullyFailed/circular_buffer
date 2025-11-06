@@ -1,27 +1,27 @@
 #[derive(PartialEq, Eq, Clone, Copy)]
-pub struct CircularBuffer<T, const CAPACITY:usize> {
+pub struct CircularBufferMultiread<T, const CAPACITY:usize> {
 	buffer:[T; CAPACITY],
 	read_cursor:usize,
 	write_cursor:usize
 }
-impl<T:Copy, const CAPACITY:usize> CircularBuffer<T, CAPACITY> {
+impl<T:Copy, const CAPACITY:usize> CircularBufferMultiread<T, CAPACITY> {
 
 	/// Create a new circular buffer as compile-time constant.
-	pub const fn new_const(default_value:T) -> CircularBuffer<T, CAPACITY> {
-		CircularBuffer {
+	pub const fn new_const(default_value:T) -> CircularBufferMultiread<T, CAPACITY> {
+		CircularBufferMultiread {
 			buffer: [default_value; CAPACITY],
 			read_cursor: 0,
 			write_cursor: 0
 		}
 	}
 }
-impl<T:Default + Copy, const CAPACITY:usize> CircularBuffer<T, CAPACITY> {
+impl<T:Default + Copy, const CAPACITY:usize> CircularBufferMultiread<T, CAPACITY> {
 	
 	/* CONSTRUCTOR METHODS */
 
 	/// Create a new circular-buffer.
-	pub fn new() -> CircularBuffer<T, CAPACITY> {
-		CircularBuffer {
+	pub fn new() -> CircularBufferMultiread<T, CAPACITY> {
+		CircularBufferMultiread {
 			buffer: [T::default(); CAPACITY],
 			read_cursor: 0,
 			write_cursor: 0
@@ -64,10 +64,15 @@ impl<T:Default + Copy, const CAPACITY:usize> CircularBuffer<T, CAPACITY> {
 
 	/// Take one sample from the buffer.
 	pub fn take_one(&mut self) -> T {
-		self.take(1)[0]
+		let found:Vec<T> = self.take(1);
+		if found.is_empty() {
+			T::default()
+		} else {
+			found[0]
+		}
 	}
 
-	/// Take all samples from the buffer.
+	/// Take all remaining samples from the buffer.
 	pub fn take_all(&mut self) -> Vec<T> {
 		self.take(self.len())
 	}
@@ -104,7 +109,7 @@ impl<T:Default + Copy, const CAPACITY:usize> CircularBuffer<T, CAPACITY> {
 		straight_space + wrapped_space
 	}
 
-	/// Get all data that is written in the buffer, ignoring the amount already having been read.
+	/// Get all data that is written in the buffer, including the amount already having been read. The newest samples will be at the end of the list.
 	pub fn raw_data(&self) -> Vec<T> {
 		let mut output:Vec<T> = self.buffer.to_vec();
 		output.rotate_left(self.read_cursor);

@@ -1,20 +1,20 @@
 #[cfg(test)]
 mod tests {
 	use std::time::{ Duration, Instant };
-	use crate::CircularBuffer;
+	use crate::CircularBufferMultiread;
 	
 	
 
 	const TEST_CAPACITY:usize = 8;
-	fn get_test_buffer() -> CircularBuffer<i32, TEST_CAPACITY> {
-		CircularBuffer::new()
+	fn get_test_buffer() -> CircularBufferMultiread<i32, TEST_CAPACITY> {
+		CircularBufferMultiread::new()
 	}
 
 
 
 	#[test]
 	fn test_new_bufferfer_is_empty() {
-		let buffer:CircularBuffer<i32, TEST_CAPACITY> = get_test_buffer();
+		let buffer:CircularBufferMultiread<i32, TEST_CAPACITY> = get_test_buffer();
 		assert_eq!(buffer.len(), 0);
 		assert!(buffer.is_empty());
 		assert!(!buffer.is_full());
@@ -22,7 +22,7 @@ mod tests {
 
 	#[test]
 	fn test_extend_and_take_simple() {
-		let mut buffer:CircularBuffer<i32, TEST_CAPACITY> = get_test_buffer();
+		let mut buffer:CircularBufferMultiread<i32, TEST_CAPACITY> = get_test_buffer();
 
 		// Test write.
 		let written:usize = buffer.extend(&[1, 2, 3]);
@@ -36,7 +36,7 @@ mod tests {
 
 	#[test]
 	fn test_extend_over_capacity_truncates() {
-		let mut buffer:CircularBuffer<i32, TEST_CAPACITY> = get_test_buffer();
+		let mut buffer:CircularBufferMultiread<i32, TEST_CAPACITY> = get_test_buffer();
 
 		let written:usize = buffer.extend(&(0..20).collect::<Vec<i32>>());
 		assert_eq!(written, TEST_CAPACITY - 1); // Should always keep one "empty" slot. This makes sure both cursors with the same value always means the bufferfer is empty, rather than full.
@@ -46,7 +46,7 @@ mod tests {
 
 	#[test]
 	fn test_take_more_than_available() {
-		let mut buffer:CircularBuffer<i32, TEST_CAPACITY> = get_test_buffer();
+		let mut buffer:CircularBufferMultiread<i32, TEST_CAPACITY> = get_test_buffer();
 
 		buffer.extend(&[1, 2, 3]);
 		let taken_data:Vec<i32> = buffer.take(10);
@@ -56,7 +56,7 @@ mod tests {
 
 	#[test]
 	fn test_wraparound_behavior() {
-		let mut buffer:CircularBuffer<i32, TEST_CAPACITY> = get_test_buffer();
+		let mut buffer:CircularBufferMultiread<i32, TEST_CAPACITY> = get_test_buffer();
 
 		// First take.
 		let written:usize = buffer.extend(&[1, 2, 3, 4, 5, 6, 7]);
@@ -75,7 +75,7 @@ mod tests {
 
 	#[test]
 	fn test_multiple_small_writes_and_reads() {
-		let mut buffer:CircularBuffer<i32, TEST_CAPACITY> = get_test_buffer();
+		let mut buffer:CircularBufferMultiread<i32, TEST_CAPACITY> = get_test_buffer();
 		for i in 0..5 {
 			assert_eq!(buffer.extend(&[i]), 1);
 		}
@@ -89,7 +89,7 @@ mod tests {
 
 	#[test]
 	fn test_alternating_extend_and_take() {
-		let mut buffer:CircularBuffer<i32, TEST_CAPACITY> = get_test_buffer();
+		let mut buffer:CircularBufferMultiread<i32, TEST_CAPACITY> = get_test_buffer();
 		for i in 0..20 {
 			buffer.extend(&[i]);
 			assert_eq!(buffer.take(1), vec![i]);
@@ -99,7 +99,7 @@ mod tests {
 
 	#[test]
 	fn test_get_raw() {
-		let mut buffer:CircularBuffer<i32, TEST_CAPACITY> = get_test_buffer();
+		let mut buffer:CircularBufferMultiread<i32, TEST_CAPACITY> = get_test_buffer();
 		buffer.extend(&(0..7).collect::<Vec<i32>>());
 		buffer.take(3);
 		buffer.extend(&(7..12).collect::<Vec<i32>>());
@@ -109,7 +109,7 @@ mod tests {
 
 	#[test]
 	fn test_fill_drain_repeat() {
-		let mut buffer:CircularBuffer<i32, TEST_CAPACITY> = get_test_buffer();
+		let mut buffer:CircularBufferMultiread<i32, TEST_CAPACITY> = get_test_buffer();
 		for round in 0..5 {
 			let data:Vec<i32> = (0..TEST_CAPACITY as i32 - 1).map(|x| x + round * 10).collect();
 			buffer.extend(&data);
@@ -122,7 +122,7 @@ mod tests {
 
 	#[test]
 	fn test_is_full_and_is_empty_consistency() {
-		let mut buffer:CircularBuffer<i32, TEST_CAPACITY> = get_test_buffer();
+		let mut buffer:CircularBufferMultiread<i32, TEST_CAPACITY> = get_test_buffer();
 		assert!(buffer.is_empty());
 		assert!(!buffer.is_full());
 
@@ -135,7 +135,7 @@ mod tests {
 	fn test_stress_test_large_cycles() {
 		const LOOPS:usize = 100_000;
 
-		let mut buffer:CircularBuffer<i32, 1024> = CircularBuffer::new();
+		let mut buffer:CircularBufferMultiread<i32, 1024> = CircularBufferMultiread::new();
 		let mut counter:i32 = 0;
 
 		for _ in 0..LOOPS {
@@ -152,7 +152,7 @@ mod tests {
 	fn test_performance_timing() {
 		const OPERATIONS:usize = 1_000_000;
 
-		let mut buffer:CircularBuffer<i32, 2048> = CircularBuffer::new();
+		let mut buffer:CircularBufferMultiread<i32, 2048> = CircularBufferMultiread::new();
 		let mut data:Vec<i32> = vec![0i32; 1024];
 
 		let start:Instant = Instant::now();
