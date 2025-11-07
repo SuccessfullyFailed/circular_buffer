@@ -419,4 +419,18 @@ mod tests {
 			}
 		}
 	}
+
+	#[test]
+	fn test_multi_read_skip_cursor_without_take() {
+		let mut buffer:CircularBufferMultiRead<i32, TEST_CAPACITY, TEST_MAX_CURSOR_COUNT> = CircularBufferMultiRead::new();
+		let cursor_a:ReadCursor = buffer.create_read_cursor();
+		let cursor_b:ReadCursor = buffer.create_read_cursor();
+
+		let data:Vec<i32> = (0..6).collect();
+		for _ in 0..8 {
+			buffer.extend(&data);
+			assert_eq!(buffer.take(8, &cursor_a), data);
+			buffer.skip_current_data(&cursor_b);
+		}
+	}
 }

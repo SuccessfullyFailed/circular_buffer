@@ -49,6 +49,11 @@ impl<T:Default + Copy, const CAPACITY:usize, const MAX_READ_CURSOR_COUNT:usize> 
 		ReadCursor(cursor_id)
 	}
 
+	/// Skip a cursor to the end of data, ignoring all current data.
+	pub fn skip_current_data(&mut self, cursor:&ReadCursor) {
+		self.read_cursors[cursor.0] = self.write_cursor;
+	}
+
 	/// Add a single sample to the buffer. Returns the amount of samples stored to the buffer.
 	pub fn push(&mut self, input:T) -> usize {
 		self.extend(&[input])
