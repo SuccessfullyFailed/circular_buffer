@@ -1,27 +1,27 @@
 #[derive(PartialEq, Eq, Clone, Copy)]
-pub struct CircularBufferMultiread<T, const CAPACITY:usize> {
+pub struct CircularBuffer<T, const CAPACITY:usize> {
 	buffer:[T; CAPACITY],
 	read_cursor:usize,
 	write_cursor:usize
 }
-impl<T:Copy, const CAPACITY:usize> CircularBufferMultiread<T, CAPACITY> {
+impl<T:Copy, const CAPACITY:usize> CircularBuffer<T, CAPACITY> {
 
 	/// Create a new circular buffer as compile-time constant.
-	pub const fn new_const(default_value:T) -> CircularBufferMultiread<T, CAPACITY> {
-		CircularBufferMultiread {
+	pub const fn new_const(default_value:T) -> CircularBuffer<T, CAPACITY> {
+		CircularBuffer {
 			buffer: [default_value; CAPACITY],
 			read_cursor: 0,
 			write_cursor: 0
 		}
 	}
 }
-impl<T:Default + Copy, const CAPACITY:usize> CircularBufferMultiread<T, CAPACITY> {
+impl<T:Default + Copy, const CAPACITY:usize> CircularBuffer<T, CAPACITY> {
 	
 	/* CONSTRUCTOR METHODS */
 
 	/// Create a new circular-buffer.
-	pub fn new() -> CircularBufferMultiread<T, CAPACITY> {
-		CircularBufferMultiread {
+	pub fn new() -> CircularBuffer<T, CAPACITY> {
+		CircularBuffer {
 			buffer: [T::default(); CAPACITY],
 			read_cursor: 0,
 			write_cursor: 0
