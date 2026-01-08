@@ -1,3 +1,7 @@
+/// Keeps a list of a static size that can be written to and read from.
+/// Keeps a cursor for the last written and read bytes.
+/// This allows the buffer, once at the end of the list, to start writing at the start of the list again, provided that that data has already been written.
+/// This allows the creation of a buffer in a static variable, without always having the same amount of data in it.
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub struct CircularBuffer<T, const CAPACITY:usize> {
 	buffer:[T; CAPACITY],

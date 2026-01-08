@@ -2,37 +2,28 @@ use crate::ReadCursor;
 
 
 
-/// Works the same as CircularBuffer, but allows using multiple threads to read.
+/// Works the same as CircularBufferDyn, but allows using multiple threads to read.
 /// For each thread that wants to read from the buffer, create a cursor that keeps track of that cursors' last read values.
-#[derive(PartialEq, Eq, Clone, Copy)]
-pub struct CircularBufferMultiRead<T, const CAPACITY:usize, const MAX_READ_CURSOR_COUNT:usize> {
-	buffer:[T; CAPACITY],
-	read_cursors:[usize; MAX_READ_CURSOR_COUNT],
-	current_read_cursor_count:usize,
+/// This can not be used statically, but does perform better than a normal Vec, as the list does not change in size, allowing it to stay in the same place in memory.
+#[derive(PartialEq, Eq, Clone)]
+pub struct CircularBufferMultiReadDyn<T> {
+	buffer:Vec<T>,
+	capacity:usize,
+	read_cursors:Vec<usize>,
+	read_cursors_capacity:usize,
 	write_cursor:usize
 }
-impl<T:Copy, const CAPACITY:usize, const MAX_READ_CURSOR_COUNT:usize> CircularBufferMultiRead<T, CAPACITY, MAX_READ_CURSOR_COUNT> {
-
-	/// Create a new circular buffer as compile-time constant.
-	pub const fn new_const(default_value:T) -> CircularBufferMultiRead<T, CAPACITY, MAX_READ_CURSOR_COUNT> {
-		CircularBufferMultiRead {
-			buffer: [default_value; CAPACITY],
-			read_cursors: [0; MAX_READ_CURSOR_COUNT],
-			current_read_cursor_count: 0,
-			write_cursor: 0
-		}
-	}
-}
-impl<T:Default + Copy, const CAPACITY:usize, const MAX_READ_CURSOR_COUNT:usize> CircularBufferMultiRead<T, CAPACITY, MAX_READ_CURSOR_COUNT> {
+impl<T:Default + Copy> CircularBufferMultiReadDyn<T> {
 	
 	/* CONSTRUCTOR METHODS */
 
 	/// Create a new circular-buffer.
-	pub fn new() -> CircularBufferMultiRead<T, CAPACITY, MAX_READ_CURSOR_COUNT> {
-		CircularBufferMultiRead {
-			buffer: [T::default(); CAPACITY],
-			read_cursors: [0; MAX_READ_CURSOR_COUNT],
-			current_read_cursor_count: 0,
+	pub fn new(capacity:usize) -> CircularBufferMultiReadDyn<T> {
+		CircularBufferMultiReadDyn {
+			buffer: vec![T::default(); capacity],
+			capacity,
+			read_cursors: Vec::new(),
+			read_cursors_capacity: 0,
 			write_cursor: 0
 		}
 	}
@@ -43,12 +34,9 @@ impl<T:Default + Copy, const CAPACITY:usize, const MAX_READ_CURSOR_COUNT:usize> 
 
 	/// Create a ReadCursor.
 	pub fn create_read_cursor<'a>(&'a mut self) -> ReadCursor {
-		let cursor_id:usize = self.current_read_cursor_count;
-		if cursor_id > MAX_READ_CURSOR_COUNT {
-			panic!("Could not create CircularBufferMultiRead Cursor, max cursor count overflow.");
-		}
-		self.current_read_cursor_count += 1;
-		ReadCursor(cursor_id)
+		self.read_cursors_capacity += 1;
+		self.read_cursors.push(self.write_cursor);
+		ReadCursor(self.read_cursors_capacity - 1)
 	}
 
 	/// Skip a cursor to the end of data, ignoring all current data.
@@ -65,8 +53,8 @@ impl<T:Default + Copy, const CAPACITY:usize, const MAX_READ_CURSOR_COUNT:usize> 
 	pub fn extend(&mut self, input:&[T]) -> usize {
 
 		// Find out how much free space is left before wrap.
-		let largest_used_space:usize = (0..self.current_read_cursor_count).map(|cursor_index| self.len(&ReadCursor(cursor_index))).max().unwrap_or_default();
-		let available_space:usize = CAPACITY - largest_used_space;
+		let largest_used_space:usize = (0..self.read_cursors.len()).map(|cursor_index| self.len(&ReadCursor(cursor_index))).max().unwrap_or_default();
+		let available_space:usize = self.capacity - largest_used_space;
 		let required_space:usize = input.len();
 
 		// If input is too large, only write beginning. Always keep one "empty" slot. This makes sure both cursors with the same value always means the buffer is empty, rather than full.
@@ -75,14 +63,14 @@ impl<T:Default + Copy, const CAPACITY:usize, const MAX_READ_CURSOR_COUNT:usize> 
 		}
 
 		// If not enough space before wrap, return or split into two modifications.
-		let available_space_before_wrap:usize = CAPACITY - self.write_cursor;
+		let available_space_before_wrap:usize = self.capacity - self.write_cursor;
 		if available_space_before_wrap < required_space {
 			return self.extend(&input[..available_space_before_wrap]) + self.extend(&input[available_space_before_wrap..required_space]);
 		}
 
 		// If enough space before wrap, write to buffer.
 		self.buffer[self.write_cursor..self.write_cursor + required_space].copy_from_slice(&input);
-		self.write_cursor = (self.write_cursor + required_space) % CAPACITY;
+		self.write_cursor = (self.write_cursor + required_space) % self.capacity;
 		required_space
 	}
 
@@ -131,12 +119,12 @@ impl<T:Default + Copy, const CAPACITY:usize, const MAX_READ_CURSOR_COUNT:usize> 
 		let used_required_space:usize = used_space.min(output.len());
 
 		// Take straight part.
-		let straight_space:usize = used_required_space.min(CAPACITY - read_cursor);
+		let straight_space:usize = used_required_space.min(self.capacity - read_cursor);
 		output[..straight_space].copy_from_slice(&self.buffer[read_cursor..read_cursor + straight_space]);
 		read_cursor += straight_space;
 		let wrapped_space:usize = used_required_space - straight_space;
 		if wrapped_space != 0 {
-			read_cursor -= CAPACITY;
+			read_cursor -= self.capacity;
 			output[straight_space..straight_space + wrapped_space].copy_from_slice(&self.buffer[read_cursor..read_cursor + wrapped_space]);
 			read_cursor += wrapped_space;
 		}
@@ -157,8 +145,8 @@ impl<T:Default + Copy, const CAPACITY:usize, const MAX_READ_CURSOR_COUNT:usize> 
 		if self.write_cursor >= read_cursor {
 			self.write_cursor - read_cursor
 		} else {
-			CAPACITY - (read_cursor - self.write_cursor)
-		}.min(CAPACITY)
+			self.capacity - (read_cursor - self.write_cursor)
+		}.min(self.capacity)
 	}
 
 	/// Wether or not there are 0 stored samples.
@@ -168,6 +156,6 @@ impl<T:Default + Copy, const CAPACITY:usize, const MAX_READ_CURSOR_COUNT:usize> 
 
 	/// Wether or not the buffer is full.
 	pub fn is_full(&self, cursor:&ReadCursor) -> bool {
-		self.len(cursor) == CAPACITY - 1
+		self.len(cursor) == self.capacity - 1
 	}
 }

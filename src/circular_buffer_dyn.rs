@@ -1,9 +1,7 @@
-
-/*
-	Works the same as CircularBuffer, but uses a vec instead of an array.
-	This allows it to be sized dynamically in the 'new' function.
-	Despite that, the buffer will not move as its size is constant throughout its entire lifetime.
-*/
+/// Works the same as CircularBuffer, but uses a vec instead of an array.
+/// This allows it to be sized dynamically in the 'new' function.
+/// Despite that, the buffer will not move as its size is constant throughout its entire lifetime.
+/// This can not be used statically, but does perform better than a normal Vec, as the list does not change in size, allowing it to stay in the same place in memory.
 #[derive(PartialEq, Eq, Clone)]
 pub struct CircularBufferDyn<T> {
 	buffer:Vec<T>,
