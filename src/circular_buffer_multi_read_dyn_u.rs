@@ -207,6 +207,21 @@ mod tests {
 	}
 
 	#[test]
+	fn test_multi_read_cursor_starts_at_write_cursor() {
+		let mut buffer:CircularBufferMultiReadDyn<i32> = get_test_buffer();
+		let cursor_a:ReadCursor = buffer.create_read_cursor();
+
+		buffer.extend(&[1, 2, 3]);
+		buffer.take(1, &cursor_a);
+		let cursor_b:ReadCursor = buffer.create_read_cursor();
+
+		assert_eq!(buffer.take(10, &cursor_a), vec![2, 3]);
+		assert_eq!(buffer.take(10, &cursor_b), vec![]);
+		assert!(buffer.is_empty(&cursor_a));
+		assert!(buffer.is_empty(&cursor_b));
+	}
+
+	#[test]
 	fn test_multi_read_wraparound_behavior() {
 		let mut buffer:CircularBufferMultiReadDyn<i32> = get_test_buffer();
 		let cursor_a:ReadCursor = buffer.create_read_cursor();

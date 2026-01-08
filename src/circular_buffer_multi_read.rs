@@ -48,6 +48,7 @@ impl<T:Default + Copy, const CAPACITY:usize, const MAX_READ_CURSOR_COUNT:usize> 
 			panic!("Could not create CircularBufferMultiRead Cursor, max cursor count overflow.");
 		}
 		self.current_read_cursor_count += 1;
+		self.read_cursors[cursor_id] = self.write_cursor;
 		ReadCursor(cursor_id)
 	}
 
